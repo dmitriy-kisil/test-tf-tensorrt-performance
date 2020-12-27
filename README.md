@@ -16,3 +16,5 @@ Without any flag - server will use model from tensorflow.keras
 `--use-tf-model` = server will use the same model, converted to TF Saved Model format
 
 `--use-trt-model` = server will use the same model, compiled with TensorRT
+
+`--use-quantized-model` = server will use the same model, quantized with Tensorflow

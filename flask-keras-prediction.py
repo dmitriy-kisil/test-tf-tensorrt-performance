@@ -8,7 +8,8 @@ from tensorflow.keras.applications import imagenet_utils
 
 from utils import check_paths
 from utils import prepare_image, make_prediction_using_trt_model, make_prediction_using_tf_model
-from utils import load_saved_trt_model, load_tf_model, load_imagenet_model
+from utils import make_prediction_using_quantized_model
+from utils import load_saved_trt_model, load_tf_model, load_imagenet_model, load_saved_quantized_model
 
 # initialize our Flask application and the Keras model
 
@@ -37,6 +38,8 @@ def predict():
                 preds = make_prediction_using_trt_model(model, image)
             elif args.use_tf_model:
                 preds = make_prediction_using_tf_model(model, image)
+            elif args.use_quantized_model:
+                preds = make_prediction_using_quantized_model(interpreter, input_details, output_details, image)
             else:
                 preds = model.predict(image)
             results = imagenet_utils.decode_predictions(preds)
@@ -64,15 +67,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--use-trt-model", action="store_true", help="use compiled with TensorRT model")
     parser.add_argument("--use-tf-model", action="store_true", help="use model, converted to TF Saved Model format")
+    parser.add_argument("--use-quantized-model", action="store_true", help="use model, quantized with Tensorflow")
     args = parser.parse_args()
     if args.use_trt_model:
         # Load model, compiled with TensorRT
-        trt_saved_model_dir = 'models/trt_resnet50'
-        model = load_saved_trt_model(trt_saved_model_dir)
+        trt_model_dir = 'models/trt_resnet50'
+        model = load_saved_trt_model(trt_model_dir)
     elif args.use_tf_model:
         # Load model from TF Saved Model format
         tf_saved_model_dir = 'models/resnet50'
-        model = load_tf_model(tf_saved_model_dir)
+        model, input_details, output_details = load_tf_model(tf_saved_model_dir)
+    elif args.use_quantized_model:
+        # Load model from TF Saved Model format
+        path_to_quantized_model_file = 'models/quantized_resnet50/quant_model.tflite'
+        interpreter, input_details, output_details = load_saved_quantized_model(path_to_quantized_model_file)
     else:
         # Otherwise load model directly from tensorflow.keras
         model = load_imagenet_model()

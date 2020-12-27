@@ -13,6 +13,8 @@ from tensorflow.python.framework import convert_to_constants
 def check_paths():
     if not os.path.exists('models'):
         os.mkdir('models')
+    if not os.path.exists('models/quantized_resnet50'):
+        os.mkdir('models/quantized_resnet50')
 
 
 def load_imagenet_model():
@@ -40,6 +42,16 @@ def load_saved_trt_model(model_dir):
     return frozen_func
 
 
+def load_saved_quantized_model(path_to_file):
+    # Load Resnet50 model, quantized with Tensorflow
+    interpreter = tf.lite.Interpreter(path_to_file)
+    interpreter.allocate_tensors()
+    # Get input and output tensors.
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    return interpreter, input_details, output_details
+
+
 def make_prediction_using_trt_model(model, image):
     image = tf.convert_to_tensor(image)
     preds = model(image)[0].numpy()
@@ -49,6 +61,13 @@ def make_prediction_using_trt_model(model, image):
 def make_prediction_using_tf_model(model, image):
     image = tf.convert_to_tensor(image)
     preds = model(image).numpy()
+    return preds
+
+
+def make_prediction_using_quantized_model(interpreter, input_details, output_details, image):
+    interpreter.set_tensor(input_details[0]['index'], image)
+    interpreter.invoke()
+    preds = interpreter.get_tensor(output_details[0]['index'])
     return preds
 
 
